@@ -42,11 +42,17 @@ class SmallEnemy(pygame.sprite.Sprite):
 
 
 class MidEnemy(pygame.sprite.Sprite):
+    #敵機生命值
+    enegy = 8
+    
     def __init__(self, bg_size):
         pygame.sprite.Sprite.__init__(self)
 
         self.image1 = pygame.image.load('images/planeC.png').convert_alpha()
         self.image2 = pygame.image.load('images/planeC_2.png').convert_alpha()
+
+        #中彈特效
+        self.image_hit = pygame.image.load("images/planeC_die_1.png").convert_alpha()
 
         self.destory_images = []
         self.destory_images.extend([\
@@ -64,10 +70,14 @@ class MidEnemy(pygame.sprite.Sprite):
         
         self.active = True#未陣亡
         self.mask = pygame.mask.from_surface(self.image1)#非透明部份檢測
+
+        self.enegy = MidEnemy.enegy
         
         self.rect.left, self.rect.top = \
                         randint(0,self.width - self.rect.width),\
                         randint(-10*self.height ,-self.height)
+
+        self.hit = False
         
     def move(self):#敵人只往下衝
         if self.rect.top < self.height:
@@ -76,6 +86,7 @@ class MidEnemy(pygame.sprite.Sprite):
             self.reset()
     def reset(self):
         self.active = True#復活
+        self.enegy = MidEnemy.enegy
         self.rect.left, self.rect.top = \
             randint(0,self.width - self.rect.width),\
             randint(-10*self.height ,-self.height)
@@ -83,11 +94,17 @@ class MidEnemy(pygame.sprite.Sprite):
 
 
 class BigEnemy(pygame.sprite.Sprite):
+    #敵機生命值
+    enegy = 20
+    
     def __init__(self, bg_size):
         pygame.sprite.Sprite.__init__(self)
 
         self.image1 = pygame.image.load('images/planeE.png').convert_alpha()
         self.image2 = pygame.image.load('images/planeE_2.png').convert_alpha()
+
+        #中彈特效
+        self.image_hit = pygame.image.load("images/planeE_die_1.png").convert_alpha()
 
         self.destory_images = []
         self.destory_images.extend([\
@@ -111,11 +128,15 @@ class BigEnemy(pygame.sprite.Sprite):
         self.speed = 1
 
         self.active = True#未陣亡
-        self.mask = pygame.mask.from_surface(self.image1)#非透明部份檢測        
+        self.mask = pygame.mask.from_surface(self.image1)#非透明部份檢測
+
+        self.enegy = BigEnemy.enegy
 
         self.rect.left, self.rect.top = \
                         randint(0,self.width - self.rect.width),\
                         randint(-10*self.height ,-5*self.height)
+
+        self.hit = False
         
     def move(self):#敵人只往下衝
         if self.rect.top < self.height:
@@ -125,6 +146,7 @@ class BigEnemy(pygame.sprite.Sprite):
     def reset(self):
 
         self.active = True#復活
+        self.enegy = BigEnemy.enegy
         self.rect.left, self.rect.top = \
             randint(0,self.width - self.rect.width),\
             randint(-10*self.height ,-5*self.height)

@@ -2,8 +2,8 @@ import pygame
 import sys
 import traceback
 import myplane
-#import bullet
 import enemy
+import bullet
 #import supply
 
 from pygame.locals import *
@@ -12,6 +12,11 @@ from random import *
 bg_size = width, height= 480,700
 screen = pygame.display.set_mode(bg_size)
 pygame.display.set_caption("飛機大戰")
+
+BLACK = (0,0,0)
+WHITE = (255,255,255)
+RED = (255,0,0)
+GREEN = (0,255,0)
 
 def add_small_enemies(group1, group2, num):
     for i in range(num):
@@ -83,12 +88,18 @@ def main():
     mid_enemies = pygame.sprite.Group()
     add_mid_enemies(mid_enemies, enemies, 4)
 
-    
 
     #生成敵方大飛機
     big_enemies = pygame.sprite.Group()
     add_big_enemies(big_enemies, enemies, 2)
 
+    #生成普通子彈
+    bullet1 = []
+    bullet1_index = 0
+    BULLET1_NUM = 4#宏定義
+
+    for i in range(BULLET1_NUM):
+        bullet1.append(bullet.Bullet1(me.rect.midtop))#飛機中上位置傳給子彈
 
     clock = pygame.time.Clock()
 
@@ -166,15 +177,60 @@ def main():
 
         screen.blit(background,(0,0))
 
+        
+        #發射子彈(10幀一次)
+        if not (delay % 10):
+            bullet1[bullet1_index].reset(me.rect.midtop)
+            bullet1_index = (bullet1_index +1 ) % BULLET1_NUM#四顆
+
+        #檢查子彈是否與敵機發生碰撞
+        for b in bullet1:
+            if b.active:#活的子彈才要檢查
+                b.move()
+                screen.blit(b.image, b.rect)
+                enemy_hit = pygame.sprite.spritecollide(b, enemies, False, pygame.sprite.collide_mask)
+                if enemy_hit:#有東西 代表有碰到敵機
+                    b.active = False#清除子彈
+                    for e in enemy_hit:
+                        if e in mid_enemies or e in big_enemies:#如果是中/大型敵機 擊中先扣血
+                            e.hit = True#中彈屬性
+                            e.enegy -=1
+                            if e.enegy == 0 :#血量見底
+                                e.active = False#清除
+                        else:
+                            e.active = False#清除敵機
+                    
+
         #繪製大型飛機
         for each in big_enemies:
             if each.active:
                 each.move()
-                if switch_image:
-                    screen.blit(each.image1, each.rect)
-                else:
-                    screen.blit(each.image2, each.rect)
+                if each.hit:#中彈
+                    #繪製被打到的特效
+                    screen.blit(each.image_hit, each.rect)
+                    each.hit = False
+                else: 
+                    if switch_image:
+                        screen.blit(each.image1, each.rect)
+                    else:
+                        screen.blit(each.image2, each.rect)
 
+                #畫血條(底色)
+                pygame.draw.line(screen, WHITE, \
+                                 (each.rect.left, each.rect.top-5), \
+                                 (each.rect.right, each.rect.top-5),2)#圖像上方5pixel處 寬度2pixel
+                #當生命>20% 畫綠色 否則紅色
+                enegy_remain = each.enegy / enemy.BigEnemy.enegy
+                if enegy_remain > 0.2:
+                    enegy_color = GREEN
+                else:
+                    enegy_color = RED
+                pygame.draw.line(screen, enegy_color,\
+                                 (each.rect.left, each.rect.top-5), \
+                                 #左邊起算加上寬度(總長度)乘以血量的比例
+                                 (each.rect.left + each.rect.width*enegy_remain, \
+                                  each.rect.top-5),2)#圖像上方5pixel處 寬度2pixel
+                
                 #大型機音效
                 if each.rect.bottom == -50:
                     enemy_flying_sound.play(-1)
@@ -197,10 +253,31 @@ def main():
         for each in mid_enemies:
             if each.active:
                 each.move()
-                if switch_image:
-                    screen.blit(each.image1, each.rect)
+                if each.hit:#中彈
+                    #繪製被打到的特效
+                    screen.blit(each.image_hit, each.rect)
+                    each.hit = False
+                else: 
+                    if switch_image:
+                        screen.blit(each.image1, each.rect)
+                    else:
+                        screen.blit(each.image2, each.rect)
+
+                #畫血條(底色)
+                pygame.draw.line(screen, WHITE, \
+                                 (each.rect.left, each.rect.top-5), \
+                                 (each.rect.right, each.rect.top-5),2)#圖像上方5pixel處 寬度2pixel
+                #當生命>20% 畫綠色 否則紅色
+                enegy_remain = each.enegy / enemy.MidEnemy.enegy
+                if enegy_remain > 0.2:
+                    enegy_color = GREEN
                 else:
-                    screen.blit(each.image2, each.rect)
+                    enegy_color = RED
+                pygame.draw.line(screen, enegy_color,\
+                                 (each.rect.left, each.rect.top-5), \
+                                 #左邊起算加上寬度(總長度)乘以血量的比例
+                                 (each.rect.left + each.rect.width*enegy_remain, \
+                                  each.rect.top-5),2)#圖像上方5pixel處 寬度2pixel
             else:
                 #陣亡
                 enemy_down_sound.play()
@@ -236,7 +313,7 @@ def main():
                                                    pygame.sprite.collide_mask)
 
         if enemies_down:#我方已掛
-            #me.active = False
+            me.active = False
             for e in enemies_down:
                 e.active = False#敵方也順便爆炸
             
