@@ -4,7 +4,7 @@ import traceback
 import myplane
 import enemy
 import bullet
-#import supply
+import supply
 
 from pygame.locals import *
 from random import *
@@ -61,7 +61,7 @@ def main():
     pygame.mixer.music.set_volume(bgm_volume)
 
     bullet_sound = pygame.mixer.Sound('sounds/bullet.wav')
-    bullet_sound.set_volume(sound_volume)
+    bullet_sound.set_volume(sound_volume*0.5)
     bomb_sound = pygame.mixer.Sound('sounds/use_bomb.wav')
     bomb_sound.set_volume(sound_volume)
     supply_sound = pygame.mixer.Sound('sounds/supply.wav')
@@ -108,6 +108,15 @@ def main():
     for i in range(BULLET1_NUM):
         bullet1.append(bullet.Bullet1(me.rect.midtop))#飛機中上位置傳給子彈
 
+    #生成超級子彈
+    bullet2 = []
+    bullet2_index = 0
+    BULLET2_NUM = 8#宏定義
+
+    for i in range(BULLET2_NUM//2):
+        bullet2.append(bullet.Bullet2((me.rect.centerx-21, me.rect.centery)))#左翼
+        bullet2.append(bullet.Bullet2((me.rect.centerx+22, me.rect.centery)))#右翼
+
     clock = pygame.time.Clock()
 
     #中彈圖像索引
@@ -142,7 +151,7 @@ def main():
 
     #設置難度級別
     level =1
-
+    
     #設置全屏炸彈
     bomb_image = pygame.image.load('images/nuclear_icon_small.png').convert_alpha()
     bomb_rect = bomb_image.get_rect()
@@ -150,6 +159,19 @@ def main():
     bomb_font =  pygame.font.Font('font/msjhbd.ttf',48)#引入微軟正黑 大小48
     bomb_num = 3
     
+    #每30秒發一次補給包
+    bullet_supply = supply.Bullet_Supply(bg_size)    
+    bomb_supply = supply.Bomb_Supply(bg_size)
+    #全屏炸彈定時器
+    SUPPLY_TIME = USEREVENT#自定義事件
+    pygame.time.set_timer(SUPPLY_TIME, 30 * 1000)#30*1000ms
+    #pygame.time.set_timer(SUPPLY_TIME, 5 * 1000)#5*1000ms
+    
+    #超級子彈的定時器
+    DOUBLE_BULLET_TIME = USEREVENT+1
+
+    #標誌是否使用超級子彈
+    is_double_bullet = False
     
     
     #用於延遲
@@ -171,7 +193,7 @@ def main():
                     if sound_volume > 0:
                         sound_volume -=0.01
                         me_sound_volume -=0.01
-                        bullet_sound.set_volume(sound_volume)
+                        bullet_sound.set_volume(sound_volume*0.5)
                         bomb_sound.set_volume(sound_volume)
                         supply_sound.set_volume(sound_volume)
                         get_bomb_sound.set_volume(sound_volume)
@@ -188,7 +210,7 @@ def main():
                     if sound_volume < 0.5:
                         sound_volume +=0.01
                         me_sound_volume +=0.01
-                        bullet_sound.set_volume(sound_volume)
+                        bullet_sound.set_volume(sound_volume*0.5)
                         bomb_sound.set_volume(sound_volume)
                         supply_sound.set_volume(sound_volume)
                         get_bomb_sound.set_volume(sound_volume)
@@ -216,6 +238,15 @@ def main():
                 #按下鼠標左鍵 且在暫停圖內
                 if event.button == 1 and paused_rect.collidepoint(event.pos):
                     paused = not paused #直接取反改狀態
+                    if paused:
+                        #暫停背景音樂與其他音效
+                        pygame.time.set_timer(SUPPLY_TIME, 0)#取消自定義事件
+                        pygame.mixer.music.pause()
+                        pygame.mixer.pause()
+                    else:
+                        pygame.time.set_timer(SUPPLY_TIME, 30*1000)#取消自定義事件
+                        pygame.mixer.music.unpause()
+                        pygame.mixer.unpause()
 
             if event.type == MOUSEMOTION:#修改hover樣式
                 if paused_rect.collidepoint(event.pos):
@@ -229,7 +260,20 @@ def main():
                         pause_image = start_nor_image
                     else:
                         pause_image = pause_nor_image
-
+            
+            if event.type == SUPPLY_TIME:
+                supply_sound.play()
+                if choice([True, False]):#隨機二選一
+                    bomb_supply.reset()
+                    #bullet_supply.reset()
+                else:
+                    bullet_supply.reset()
+            
+            if event.type == DOUBLE_BULLET_TIME:
+                is_double_bullet = False
+                pygame.time.set_timer(DOUBLE_BULLET_TIME, 0)
+               
+                
 
         #根據用戶的得分增加難度
         if level ==1 and score > 5000:
@@ -294,17 +338,57 @@ def main():
                 me.moveLeft()
             if key_pressed[K_d] or key_pressed[K_RIGHT]:
                 me.moveRight()
-
             
 
+            #檢查是否有出現補給
+            #繪製全屏炸彈補給與檢查玩家是否獲得
+            if bomb_supply.active:
+                bomb_supply.move()
+                screen.blit(bomb_supply.image, bomb_supply.rect)
+                if pygame.sprite.collide_mask(bomb_supply, me):
+                    #代表獲得補給(發生碰撞)
+                    get_bomb_sound.play()
+                    if bomb_num <3: #炸彈最多3個
+                        bomb_num +=1
+                    bomb_supply.active=False#取得後就消除該補給
+            
+            #繪製雙重子彈補給與檢查玩家是否獲得
+            if bullet_supply.active:
+                bullet_supply.move()
+                screen.blit(bullet_supply.image, bullet_supply.rect)
+                if pygame.sprite.collide_mask(bullet_supply, me):
+                    #代表獲得補給(發生碰撞)
+                    get_bullet_sound.play()
+                    #發射超級子彈
+                    is_double_bullet = True
+                    
+                    #18秒後呼叫DOUBLE_BULLET_TIME事件 關閉雙重子彈
+                    pygame.time.set_timer(DOUBLE_BULLET_TIME, 18*1000)
+                    bullet_supply.active=False#取得後就消除該補給
+            
+            
             
             #發射子彈(10幀一次)
             if not (delay % 10):
-                bullet1[bullet1_index].reset(me.rect.midtop)
-                bullet1_index = (bullet1_index +1 ) % BULLET1_NUM#四顆
+                bullet_sound.play()
+                bullets = []
+                #檢查是否為超級子彈
+                if is_double_bullet:
+                    bullets = bullet2
+                    bullets[bullet2_index].reset((me.rect.centerx-21, me.rect.centery))#左翼
+                    bullets[bullet2_index+1].reset((me.rect.centerx+22, me.rect.centery))#右翼
+                    bullet2_index = (bullet2_index +2 ) % BULLET2_NUM#八顆
+                    
+                else:
+                    bullets = bullet1
+                    
+                    bullets[bullet1_index].reset(me.rect.midtop)
+                    bullet1_index = (bullet1_index +1 ) % BULLET1_NUM#四顆
+                
 
             #檢查子彈是否與敵機發生碰撞
-            for b in bullet1:
+            #for b in bullets:
+            for b in bullets:
                 if b.active:#活的子彈才要檢查
                     b.move()
                     screen.blit(b.image, b.rect)
@@ -459,7 +543,7 @@ def main():
                         #me.reset()
                         print("Game over")
                         running = False
-
+            
             #繪製全屏炸彈數量
             bomb_text = bomb_font.render("x %d" % bomb_num, True, WHITE)
             text_rect = bomb_text.get_rect()
