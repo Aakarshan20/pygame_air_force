@@ -30,6 +30,9 @@ class MyPlane(pygame.sprite.Sprite):
         self.speed = 10
 
         self.active = True#未陣亡
+
+        self.invincible = False#復活期間3秒無敵
+        
         #調用mask.from_surface檢測非透明模塊的邊緣
         self.mask = pygame.mask.from_surface(self.image1)
         
@@ -57,3 +60,26 @@ class MyPlane(pygame.sprite.Sprite):
             self.rect.right +=self.speed
         else:
             self.rect.right = self.width
+
+
+
+    def reset(self):#飛機重生
+        self.rect.left , self.rect.top = \
+            (self.width - self.rect.width)//2,\
+            self.height-self.rect.height-60
+
+        self.active = True
+        self.invincible = True
+
+
+
+
+
+
+
+
+
+
+
+
+    

@@ -130,6 +130,9 @@ def main():
     score_font = pygame.font.Font('font/msjhbd.ttf',36)#引入微軟正黑 大小36
 
 
+    #用於阻止重覆打開記錄文件
+    recorded = False
+    
     #標誌是否暫停遊戲
     paused = False
 
@@ -166,12 +169,31 @@ def main():
     SUPPLY_TIME = USEREVENT#自定義事件
     pygame.time.set_timer(SUPPLY_TIME, 30 * 1000)#30*1000ms
     #pygame.time.set_timer(SUPPLY_TIME, 5 * 1000)#5*1000ms
+
     
     #超級子彈的定時器
     DOUBLE_BULLET_TIME = USEREVENT+1
 
     #標誌是否使用超級子彈
     is_double_bullet = False
+
+    #復活後無敵時間的計時器
+    INVINCIBLE_TIME = USEREVENT+2
+
+
+    #我方生命數
+    life_image = pygame.image.load('images/life.png')
+    life_rect = life_image.get_rect()
+    life_num = 1    
+
+    #game over畫面
+    gameover_font =pygame.font.Font('font/msjhbd.ttf',36)#引入微軟正黑 大小36
+    again_image = pygame.image.load('images/restart.png').convert_alpha()
+    again_rect = again_image.get_rect()
+
+    gameover_image = pygame.image.load('images/quit.png').convert_alpha()
+    gameover_rect = gameover_image.get_rect()
+    
     
     
     #用於延遲
@@ -272,7 +294,11 @@ def main():
             if event.type == DOUBLE_BULLET_TIME:
                 is_double_bullet = False
                 pygame.time.set_timer(DOUBLE_BULLET_TIME, 0)
-               
+
+            elif event.type == INVINCIBLE_TIME:
+                me.invincible= False
+                pygame.time.set_timer(INVINCIBLE_TIME, 0)
+                
                 
 
         #根據用戶的得分增加難度
@@ -325,7 +351,7 @@ def main():
             
         screen.blit(background,(0,0))           
                     
-        if not paused:#沒按暫停才進行主流程
+        if life_num and not paused:#有餘命且沒按暫停才進行主流程
             
             #檢測用戶的鍵盤操作
             key_pressed = pygame.key.get_pressed()
@@ -451,7 +477,7 @@ def main():
                             enemy_flying_sound.stop()
                             score += 10000
                             each.reset()
-                        
+                            
                     
 
             #繪製中型飛機
@@ -519,7 +545,7 @@ def main():
             enemies_down = pygame.sprite.spritecollide(me, enemies, False, \
                                                        pygame.sprite.collide_mask)
 
-            if enemies_down:#我方已掛
+            if enemies_down and not me.invincible:#我方被撞 且重生無敵時間已過
                 me.active = False
                 for e in enemies_down:
                     e.active = False#敵方也順便爆炸
@@ -540,20 +566,108 @@ def main():
                     screen.blit(me.destory_images[me_destory_index], me.rect)
                     me_destory_index = (me_destory_index +1)%4
                     if me_destory_index == 0:
-                        #me.reset()
-                        print("Game over")
-                        running = False
+                        life_num -=1
+                        me.reset()
+                        #調用重生計時器
+                        pygame.time.set_timer(INVINCIBLE_TIME, 3*1000)#3000ms
+                        #print("Game over")
+                        #running = False
             
             #繪製全屏炸彈數量
             bomb_text = bomb_font.render("x %d" % bomb_num, True, WHITE)
             text_rect = bomb_text.get_rect()
             screen.blit(bomb_image, (10, height-10-bomb_rect.height))
             screen.blit(bomb_text, (20+bomb_rect.width, height-5-text_rect.height))
-            
-        #將string渲染成surface對象 True=抗鋸齒 WHITE字體前景色
-        score_text = score_font.render("Score: %s" % str(score), True, WHITE)
 
-        screen.blit(score_text, (10,30))
+            #繪製飛機生命值
+            if life_num :
+                for i in range(life_num):
+                    screen.blit(life_image, \
+                                (width -10 - (i+1) * life_rect.width, \
+                                height -10 - life_rect.height))        
+            #繪製得分: 將string渲染成surface對象 True=抗鋸齒 WHITE字體前景色
+            score_text = score_font.render("Score: %s" % str(score), True, WHITE)
+
+            screen.blit(score_text, (10,30))
+
+        #繪製遊戲結束畫面
+        elif life_num == 0:#不能用else 因為會連按暫停都給你結束
+            #背景音樂停止
+            pygame.mixer.music.stop()
+
+            #停止全部音效
+            pygame.mixer.stop()
+
+            #停止發放補給
+            pygame.time.set_timer(SUPPLY_TIME, 0)
+
+            #如果還沒開過文件
+            if not recorded:
+                recorded = True#設為開過檔案
+
+                with open("record.txt", "r") as f:
+                    record_score = int(f.read())
+
+                if score > record_score:
+                    with open("record.txt", "w") as f:
+                        f.write(str(score))
+
+                
+                
+            #繪製結束介面
+            screen.blit(background,(0,0))  
+            record_score_text = score_font.render("Best :%d" % record_score, True ,WHITE)
+            screen.blit(record_score_text, (50,50))
+            #screen.blit(background,(0,0))  #---
+            gameover_text1 = gameover_font.render("Your Score " , True , WHITE)
+            gameover_text1_rect = gameover_text1.get_rect()
+            gameover_text1_rect.left, gameover_text1_rect.top = \
+                                      (width - gameover_text1_rect.width)//2,height //3
+
+            screen.blit(gameover_text1, gameover_text1_rect)
+            #screen.blit(background,(0,0))  #---
+            gameover_text2 = gameover_font.render(str(score), True ,WHITE)
+            gameover_text2_rect = gameover_text2.get_rect()
+            gameover_text2_rect.left, gameover_text2_rect.top = \
+                                      (width - gameover_text2_rect.width)//2, \
+                                      gameover_text1_rect.bottom +10
+
+            screen.blit(gameover_text2, gameover_text2_rect)
+            #screen.blit(background,(0,0))  #----
+            again_rect.left, again_rect.top = \
+                             (width - again_rect.width) // 2, \
+                             gameover_text2_rect.bottom + 50
+            screen.blit(again_image, again_rect)
+
+            gameover_rect.left, gameover_rect.top = \
+                                (width - again_rect.width) // 2, \
+                                again_rect.bottom + 10
+            screen.blit(gameover_image, gameover_rect)
+            #screen.blit(background,(0,0))  #---
+
+            #檢測用戶鼠標操作
+            #如果是左鍵
+            if pygame.mouse.get_pressed()[0]:
+                # 獲取滑鼠座標
+                pos = pygame.mouse.get_pos()
+                #如果用戶點擊"重新開始"
+                if again_rect.left < pos[0] < again_rect.right and \
+                    again_rect.top < pos[1] < again_rect.bottom:
+                    #調用main() 重新開始遊戲
+                    main()
+                #如果用戶點擊"結束"    
+                elif gameover_rect.left < pos[0] < gameover_rect.right and \
+                    gameover_rect.top < pos[1] < gameover_rect.bottom:
+                    #結束遊戲
+                    pygame.quit()
+                    sys.exit()
+                    
+
+                                    
+            #running = False
+            
+            
+        
 
         #繪製暫停按紐
         screen.blit(pause_image,paused_rect)
