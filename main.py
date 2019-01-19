@@ -127,7 +127,8 @@ def main():
 
     #統計用戶得分
     score =0
-    score_font = pygame.font.Font('font/msjhbd.ttf',36)#引入微軟正黑 大小36
+    #score_font = pygame.font.Font('font/msjhbd.ttf',36)#引入微軟正黑 大小36
+    score_font = pygame.font.Font('font/Coiny-Regular.ttf',36)#引入字體 大小36
 
 
     #用於阻止重覆打開記錄文件
@@ -139,13 +140,18 @@ def main():
     #用於切換圖片
     switch_image = True
     #暫停圖(正常)
-    pause_nor_image = pygame.image.load('images/pause_normal.png').convert_alpha()
+    #pause_nor_image = pygame.image.load('images/pause_normal.png').convert_alpha()
+    pause_nor_image = pygame.image.load('images/pause_normal_white.png').convert_alpha()
     #暫停圖(hover)
-    pause_pressed_image = pygame.image.load('images/pause_hover.png').convert_alpha()
+    #pause_pressed_image = pygame.image.load('images/pause_hover.png').convert_alpha()
+    pause_pressed_image = pygame.image.load('images/pause_normal.png').convert_alpha()
+
     #開始圖(正常)
-    start_nor_image = pygame.image.load('images/play_normal.png').convert_alpha()
+    #start_nor_image = pygame.image.load('images/play_normal.png').convert_alpha()
+    start_nor_image = pygame.image.load('images/play_normal_white.png').convert_alpha()
     #開始圖(hover)
-    start_pressed_image = pygame.image.load('images/play_hover.png').convert_alpha()
+    #start_pressed_image = pygame.image.load('images/play_hover.png').convert_alpha()
+    start_pressed_image = pygame.image.load('images/play_normal.png').convert_alpha()
 
     #圖片大小都一樣所以取得其中一個的矩型即可
     paused_rect = pause_nor_image.get_rect()
@@ -159,7 +165,8 @@ def main():
     bomb_image = pygame.image.load('images/nuclear_icon_small.png').convert_alpha()
     bomb_rect = bomb_image.get_rect()
     #bomb_rect.left, bomb_rect.top = 10, height - bomb_rect.height-10
-    bomb_font =  pygame.font.Font('font/msjhbd.ttf',48)#引入微軟正黑 大小48
+    #bomb_font =  pygame.font.Font('font/msjhbd.ttf',48)#引入微軟正黑 大小48
+    bomb_font =  pygame.font.Font('font/Coiny-Regular.ttf',48)#引入其他字體 大小48
     bomb_num = 3
     
     #每30秒發一次補給包
@@ -184,16 +191,18 @@ def main():
     #我方生命數
     life_image = pygame.image.load('images/life.png')
     life_rect = life_image.get_rect()
-    life_num = 1    
+    life_num = 1   
 
     #game over畫面
-    gameover_font =pygame.font.Font('font/msjhbd.ttf',36)#引入微軟正黑 大小36
-    again_image = pygame.image.load('images/restart.png').convert_alpha()
+    gameover_font =pygame.font.Font('font/Coiny-Regular.ttf',36)#引入其他字體 大小36
+    again_image = pygame.image.load('images/restart_text.png').convert_alpha()
     again_rect = again_image.get_rect()
 
-    gameover_image = pygame.image.load('images/quit.png').convert_alpha()
-    gameover_rect = gameover_image.get_rect()
+    gameover_image_ori = pygame.image.load('images/quit_text.png').convert_alpha()
+    gameover_rect = gameover_image_ori.get_rect()
     
+    gameover_image = gameover_image_ori
+    gameover_image_hover = pygame.image.load('images/quit_text_hover.png').convert_alpha()
     
     
     #用於延遲
@@ -282,6 +291,16 @@ def main():
                         pause_image = start_nor_image
                     else:
                         pause_image = pause_nor_image
+#
+                if gameover_rect.collidepoint(event.pos):
+                    #如果是暫停狀態下 更換暫停的圖片 反之 更換開始的圖片
+                    gameover_image = gameover_image_hover
+                else:#鼠標不在pause圖片的區域中
+                    gameover_image = gameover_image_ori
+
+                
+
+                
             
             if event.type == SUPPLY_TIME:
                 supply_sound.play()
@@ -640,7 +659,7 @@ def main():
             screen.blit(again_image, again_rect)
 
             gameover_rect.left, gameover_rect.top = \
-                                (width - again_rect.width) // 2, \
+                                (width - gameover_rect.width) // 2, \
                                 again_rect.bottom + 10
             screen.blit(gameover_image, gameover_rect)
             #screen.blit(background,(0,0))  #---
