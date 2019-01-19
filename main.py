@@ -195,8 +195,14 @@ def main():
 
     #game over畫面
     gameover_font =pygame.font.Font('font/Coiny-Regular.ttf',36)#引入其他字體 大小36
-    again_image = pygame.image.load('images/restart_text.png').convert_alpha()
-    again_rect = again_image.get_rect()
+
+    again_image_ori = pygame.image.load('images/restart_text.png').convert_alpha()
+    again_rect = again_image_ori.get_rect()
+
+    again_image = again_image_ori
+
+    again_image_hover = pygame.image.load('images/restart_text_hover.png').convert_alpha()
+
 
     gameover_image_ori = pygame.image.load('images/quit_text.png').convert_alpha()
     gameover_rect = gameover_image_ori.get_rect()
@@ -291,12 +297,19 @@ def main():
                         pause_image = start_nor_image
                     else:
                         pause_image = pause_nor_image
-#
+
+                #響應滑鼠hover與restart/quit字體的互動           
                 if gameover_rect.collidepoint(event.pos):
-                    #如果是暫停狀態下 更換暫停的圖片 反之 更換開始的圖片
+                    
                     gameover_image = gameover_image_hover
-                else:#鼠標不在pause圖片的區域中
+                else:
                     gameover_image = gameover_image_ori
+
+                if again_rect.collidepoint(event.pos):
+                    
+                    again_image = again_image_hover
+                else:
+                    again_image = again_image_ori
 
                 
 
