@@ -191,7 +191,7 @@ def main():
     #我方生命數
     life_image = pygame.image.load('images/life.png')
     life_rect = life_image.get_rect()
-    life_num = 1   
+    life_num = 3   
 
     #game over畫面
     gameover_font =pygame.font.Font('font/Coiny-Regular.ttf',36)#引入其他字體 大小36
@@ -609,7 +609,7 @@ def main():
             bomb_text = bomb_font.render("x %d" % bomb_num, True, WHITE)
             text_rect = bomb_text.get_rect()
             screen.blit(bomb_image, (10, height-10-bomb_rect.height))
-            screen.blit(bomb_text, (20+bomb_rect.width, height-5-text_rect.height))
+            screen.blit(bomb_text, (20+bomb_rect.width, height-20-text_rect.height))
 
             #繪製飛機生命值
             if life_num :
